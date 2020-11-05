@@ -96,31 +96,21 @@ namespace nettest
                     //translate bytes of request to string
 
                     //String data2;
-                    /*
-                    string fuck = "";
-                    foreach (byte a in bytes)
-                    {
-                        fuck += a.ToString();
-                        fuck += " ";
-                    }
-                    ConsoleHelper.Log(ConsoleHelper.MessageType.net, fuck);
-                    String data = Encoding.UTF8.GetString(bytes);
-                    ConsoleHelper.Log(ConsoleHelper.MessageType.net, data);*/
 
                     while (bytes.Length > 0)
                     { 
                         switch (byteConvert(ref bytes))
                         {
                             case 0: //debug message
-                                string _fuck = "";
+                                string log = "";
                                 foreach(byte a in bytes)
                                 {
-                                    _fuck += a.ToString();
-                                    _fuck += " ";
+                                    log += a.ToString();
+                                    log += " ";
                                 }
-                                ConsoleHelper.Log(ConsoleHelper.MessageType.net, _fuck);
-                                String _data = Encoding.UTF8.GetString(bytes);
-                                ConsoleHelper.Log(ConsoleHelper.MessageType.net,_data);
+                                ConsoleHelper.Log(ConsoleHelper.MessageType.net, log);
+                                String data = Encoding.UTF8.GetString(bytes);
+                                ConsoleHelper.Log(ConsoleHelper.MessageType.net,data);
                                 bytes = new byte[0];
                                 break;
                             case 1: //this is position processing information.
