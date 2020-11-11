@@ -16,7 +16,9 @@ namespace nettest
     class Program
     {
         //static CharInfo[] chars = new CharInfo[255]; 
-        static List<CharInfo> players;
+        //static List<CharInfo> players = new List<CharInfo>();
+        static CharInfo[] players = new CharInfo[255];
+        //static List<NetworkStream> streams = new List<NetworkStream>();
 
         //static float[,] clientpos = new float[3, 2];
         //static AnimInfo[] animInfo = new AnimInfo[2];
@@ -37,46 +39,66 @@ namespace nettest
             server.Start();
             ConsoleHelper.Log(ConsoleHelper.MessageType.info, "Server has started, Waiting for a connection...");
 
-            TcpClient client = server.AcceptTcpClient();
+            Thread thread = new Thread(() =>
+            {
+                while (true)
+                {
+                    int i = 0;
+                    TcpClient client = server.AcceptTcpClient();
+                    NetworkStream stream = client.GetStream();
+                    ConsoleHelper.Log(ConsoleHelper.MessageType.info, "got a connection!");
+                    players[i] = new CharInfo();
+                    players[i].client = client;
+                    players[i].stream = stream;
+                    Thread thread2 = new Thread(() => Listening(ref stream, ref client, i));
+                    thread2.Start();
+                    i++;
+                }
+            });
+            thread.Start();
+            
 
-            NetworkStream stream = client.GetStream();
-            ConsoleHelper.Log(ConsoleHelper.MessageType.info,"got a connection!");
-            players.Add(new CharInfo());
-            Thread thread2 = new Thread(() => Listening(ref stream, ref client,0));
-            thread2.Start();
-
-            TcpClient client2 = server.AcceptTcpClient();
+            /*TcpClient client2 = server.AcceptTcpClient();
             NetworkStream stream2 = client2.GetStream();
             ConsoleHelper.Log(ConsoleHelper.MessageType.info,"got another connection!");
             players.Add(new CharInfo());
             Thread thread3 = new Thread(() => Listening(ref stream2, ref client2,1));
-            thread3.Start();
+            thread3.Start();*/
             while (true)
             {
                 
                 Thread.Sleep(14);
                 
-                for (int i = 0; i < 2; i++)
+                for (int i = 0; i < 255; i++)
                 {
-                    //byte[] bruhbytes = BitConverter.GetBytes(clientpos[i, 0]);
-                    //byte[] bruhbytes2 = BitConverter.GetBytes(clientpos[i, 1]);
-                    List<byte> bruhbytes = new List<byte> { (byte)players[i].x, (byte)players[i].y, (byte)(int)players[i].map, (byte)players[i].character_name.Length };
-                    bruhbytes.AddRange(Encoding.ASCII.GetBytes(players[i].character_name));
-                    //bruhbytes.RemoveAt(bruhbytes.Count); //.remove null terminator at the end
-                    bruhbytes.Add((byte)players[i].character_index);
-                    bruhbytes.Add((byte)players[i].direction);
-                    bruhbytes.Add(0x00);
-                    if (i == 0)
+                    if (players[i] != null)
                     {
-                        stream2.Write(bruhbytes.ToArray());
-                        //stream.Write(bruhbytes2);
+                        //byte[] bruhbytes = BitConverter.GetBytes(clientpos[i, 0]);
+                        //byte[] bruhbytes2 = BitConverter.GetBytes(clientpos[i, 1]);
+                        List<byte> bruhbytes = new List<byte> { (byte)players[i].x, (byte)players[i].y, (byte)players[i].map, (byte)players[i].character_name.Length };
+                        bruhbytes.AddRange(Encoding.ASCII.GetBytes(players[i].character_name));
+                        //bruhbytes.RemoveAt(bruhbytes.Count); //.remove null terminator at the end
+                        bruhbytes.Add((byte)players[i].character_index);
+                        bruhbytes.Add((byte)players[i].direction);
+                        bruhbytes.Add(0x00);
+                        try
+                        {
+                            if (players[i] != null)
+                                players[i].stream.Write(bruhbytes.ToArray());
+                        }
+                        catch (System.Net.Sockets.SocketException e)
+                        {
+                            if (e.SocketErrorCode == SocketError.ConnectionReset) //.if the player disconnects
+                            {
+                                ConsoleHelper.Log(ConsoleHelper.MessageType.net, "player " + i.ToString() + " disconnected.");
+                                players[i] = null;
+                            }
+                            else
+                            {
+                                throw e; //if its not the error im looking for, i should be crashing.
+                            }
+                        }
                     }
-                    else
-                    {
-                        stream.Write(bruhbytes.ToArray());
-                        //stream2.Write(bruhbytes2);
-                    }
-
                 }
             }
         }
@@ -182,6 +204,8 @@ namespace nettest
         public int map;
         public int x;
         public int y;
+        public TcpClient client;
+        public NetworkStream stream;
 
         public CharInfo()
         {
