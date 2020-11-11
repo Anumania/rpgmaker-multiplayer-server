@@ -99,6 +99,7 @@ namespace nettest
                         }
                         catch (System.IO.IOException e)
                         {
+                            ConsoleHelper.Log(ConsoleHelper.MessageType.error, e.Message);
                             //if (e == SocketError.ConnectionReset) //.if the player disconnects
                             //{
                                 ConsoleHelper.Log(ConsoleHelper.MessageType.net, "player " + i.ToString() + " disconnected.");
