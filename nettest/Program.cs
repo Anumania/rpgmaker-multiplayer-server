@@ -41,12 +41,14 @@ namespace nettest
 
             NetworkStream stream = client.GetStream();
             ConsoleHelper.Log(ConsoleHelper.MessageType.info,"got a connection!");
+            players.Add(new CharInfo());
             Thread thread2 = new Thread(() => Listening(ref stream, ref client,0));
             thread2.Start();
 
             TcpClient client2 = server.AcceptTcpClient();
             NetworkStream stream2 = client2.GetStream();
             ConsoleHelper.Log(ConsoleHelper.MessageType.info,"got another connection!");
+            players.Add(new CharInfo());
             Thread thread3 = new Thread(() => Listening(ref stream2, ref client2,1));
             thread3.Start();
             while (true)
@@ -114,16 +116,16 @@ namespace nettest
                                 bytes = new byte[0];
                                 break;
                             case 1: //this is position processing information.
-                                clientpos[0, clientNum] = byteConvert(ref bytes); //x
-                                clientpos[1, clientNum] = byteConvert(ref bytes); //y;
+                                players[clientNum].x = byteConvert(ref bytes); //x
+                                players[clientNum].y = byteConvert(ref bytes); //y;
                                 break;
                             case 2: //map change
-                                clientpos[2, clientNum] = byteConvert(ref bytes);
+                                players[clientNum].map = byteConvert(ref bytes);
                                 break;
                             case 3: // anim change
-                                animInfo[clientNum].character_name = Encoding.UTF8.GetString(genericConvert(ref bytes, byteConvert(ref bytes)));
-                                animInfo[clientNum].character_index = byteConvert(ref bytes);
-                                animInfo[clientNum].direction = byteConvert(ref bytes);
+                                players[clientNum].character_name = Encoding.UTF8.GetString(genericConvert(ref bytes, byteConvert(ref bytes)));
+                                players[clientNum].character_index = byteConvert(ref bytes);
+                                players[clientNum].direction = byteConvert(ref bytes);
                                 break;
                             default:
                                 ConsoleHelper.Log(ConsoleHelper.MessageType.error,"unsupported packet type");
