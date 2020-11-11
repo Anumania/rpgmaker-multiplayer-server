@@ -82,33 +82,23 @@ namespace nettest
                         bruhbytes.Add((byte)players[i].character_index);
                         bruhbytes.Add((byte)players[i].direction);
                         bruhbytes.Add(0x00);
-                        try
-                        {
+                        
                             if (players[i] != null)
                             {
                                 for(int j = 0; j < 255; j++)
                                 {
                                     if(j!= i&& players[j] != null)
                                     {
+                                    try { 
                                         players[j].stream.Write(bruhbytes.ToArray());
+                                    }
+                                    catch (System.IO.IOException e)
+                                    {
+                                        ConsoleHelper.Log(ConsoleHelper.MessageType.net, "player " + j.ToString() + " disconnected.");
+                                        players[j] = null;
                                     }
                                 }
                             }
-
-                                
-                        }
-                        catch (System.IO.IOException e)
-                        {
-                            ConsoleHelper.Log(ConsoleHelper.MessageType.error, e.Message);
-                            //if (e == SocketError.ConnectionReset) //.if the player disconnects
-                            //{
-                                ConsoleHelper.Log(ConsoleHelper.MessageType.net, "player " + i.ToString() + " disconnected.");
-                                players[i] = null;
-                            //}
-                            //else
-                            //{
-                                //throw e; //if its not the error im looking for, i should be crashing.
-                            //}
                         }
                     }
                 }
