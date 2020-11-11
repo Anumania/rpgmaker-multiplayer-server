@@ -35,20 +35,18 @@ namespace nettest
             
 
             server.Start();
-            Console.WriteLine("Server has started on 127.0.0.1:80.{0}Waiting for a connection...", Environment.NewLine);
+            ConsoleHelper.Log(ConsoleHelper.MessageType.info, "Server has started, Waiting for a connection...");
 
             TcpClient client = server.AcceptTcpClient();
 
             NetworkStream stream = client.GetStream();
-            Console.WriteLine("got a connection!");
-            players.Add(new CharInfo());
+            ConsoleHelper.Log(ConsoleHelper.MessageType.info,"got a connection!");
             Thread thread2 = new Thread(() => Listening(ref stream, ref client,0));
             thread2.Start();
 
             TcpClient client2 = server.AcceptTcpClient();
             NetworkStream stream2 = client2.GetStream();
-            Console.WriteLine("got another connection!");
-            players.Add(new CharInfo());
+            ConsoleHelper.Log(ConsoleHelper.MessageType.info,"got another connection!");
             Thread thread3 = new Thread(() => Listening(ref stream2, ref client2,1));
             thread3.Start();
             while (true)
@@ -84,41 +82,53 @@ namespace nettest
         {
             while (true)
             {
-                Byte[] bytes = new Byte[client.Available];
+                if (client.Available > 0) //remember that client packets are always complete when processed, not cut off in the middle.
+                {
+                    Byte[] bytes = new Byte[client.Available];
+                    
+                    stream.Read(bytes, 0, bytes.Length);
+                    // List<byte> byteList = new List<byte>(bytes);
+                    //foreach(byte b in bytes)
+                    //{
+                    // Console.WriteLine(b.ToString());
+                    //  Console.WriteLine("line");
+                    //}
+                    //translate bytes of request to string
 
-                stream.Read(bytes, 0, bytes.Length);
-                // List<byte> byteList = new List<byte>(bytes);
-                //foreach(byte b in bytes)
-                //{
-                // Console.WriteLine(b.ToString());
-                //  Console.WriteLine("line");
-                //}
-                //translate bytes of request to string
-                //String data = Encoding.UTF8.GetString(bytes);
-                //String data2;
-                //Console.WriteLine(data);
+                    //String data2;
 
-                while (bytes.Length > 0)
-                { 
-                    switch (byteConvert(ref bytes))
-                    {
-                        case 0: //this should never happen
-                            Console.WriteLine("something is very bad"); break;
-                        case 1: //this is position processing information.
-                            players[clientNum].x = byteConvert(ref bytes); //x
-                            players[clientNum].y = byteConvert(ref bytes); //y;
-                            break;
-                        case 2: //map change
-                            players[clientNum].map = byteConvert(ref bytes);
-                            break;
-                        case 3: // anim change
-                            players[clientNum].character_name = Encoding.UTF8.GetString(genericConvert(ref bytes, byteConvert(ref bytes)));
-                            players[clientNum].character_index = byteConvert(ref bytes);
-                            players[clientNum].direction = byteConvert(ref bytes);
-                            break;
-                        default:
-                            Console.WriteLine("unsupported packet type");
-                            break;
+                    while (bytes.Length > 0)
+                    { 
+                        switch (byteConvert(ref bytes))
+                        {
+                            case 0: //debug message
+                                string log = "";
+                                foreach(byte a in bytes)
+                                {
+                                    log += a.ToString();
+                                    log += " ";
+                                }
+                                ConsoleHelper.Log(ConsoleHelper.MessageType.net, log);
+                                String data = Encoding.UTF8.GetString(bytes);
+                                ConsoleHelper.Log(ConsoleHelper.MessageType.net,data);
+                                bytes = new byte[0];
+                                break;
+                            case 1: //this is position processing information.
+                                clientpos[0, clientNum] = byteConvert(ref bytes); //x
+                                clientpos[1, clientNum] = byteConvert(ref bytes); //y;
+                                break;
+                            case 2: //map change
+                                clientpos[2, clientNum] = byteConvert(ref bytes);
+                                break;
+                            case 3: // anim change
+                                animInfo[clientNum].character_name = Encoding.UTF8.GetString(genericConvert(ref bytes, byteConvert(ref bytes)));
+                                animInfo[clientNum].character_index = byteConvert(ref bytes);
+                                animInfo[clientNum].direction = byteConvert(ref bytes);
+                                break;
+                            default:
+                                ConsoleHelper.Log(ConsoleHelper.MessageType.error,"unsupported packet type");
+                                break;
+                        }
                     }
                 }
             }
@@ -180,5 +190,38 @@ namespace nettest
             x = 0;
             y = 0;
         }
+    }
+    class ConsoleHelper
+    {
+        public enum MessageType
+        {
+            info = 0,
+            error = 1,
+            net = 2,
+        }
+        public static void Log(MessageType type, string message)
+        {
+            Console.Write("[");
+            switch (type){
+                case MessageType.info:
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.Write("info");
+                    Console.ResetColor();
+                    break;
+                case MessageType.error:
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write("ERROR");
+                    Console.ResetColor();
+                    break;
+                case MessageType.net:
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.Write("net");
+                    Console.ResetColor();
+                    break;
+            }
+            Console.Write("] ");
+            Console.WriteLine(message);
+        }
+
     }
 }
