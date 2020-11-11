@@ -15,12 +15,16 @@ namespace nettest
 {
     class Program
     {
-        static float[,] clientpos = new float[3, 2];
-        static AnimInfo[] animInfo = new AnimInfo[2];
+        //static CharInfo[] chars = new CharInfo[255]; 
+        static List<CharInfo> players;
+
+        //static float[,] clientpos = new float[3, 2];
+        //static AnimInfo[] animInfo = new AnimInfo[2];
+
         public static void Main(string[] args)
         {
-            animInfo[0] = new AnimInfo();
-            animInfo[1] = new AnimInfo(); // shh i know this is bad 
+            //animInfo[0] = new AnimInfo();
+            //animInfo[1] = new AnimInfo(); // shh i know this is bad 
             //IPAddress ip;
             
                 //ip = new IPAddress(new byte[] { byte.Parse(args[0]), byte.Parse(args[1]), byte.Parse(args[2]), byte.Parse(args[3]) });
@@ -37,12 +41,14 @@ namespace nettest
 
             NetworkStream stream = client.GetStream();
             Console.WriteLine("got a connection!");
+            players.Add(new CharInfo());
             Thread thread2 = new Thread(() => Listening(ref stream, ref client,0));
             thread2.Start();
 
             TcpClient client2 = server.AcceptTcpClient();
             NetworkStream stream2 = client2.GetStream();
             Console.WriteLine("got another connection!");
+            players.Add(new CharInfo());
             Thread thread3 = new Thread(() => Listening(ref stream2, ref client2,1));
             thread3.Start();
             while (true)
@@ -50,15 +56,15 @@ namespace nettest
                 
                 Thread.Sleep(14);
                 
-                for (int i = 0; i < clientpos.GetLength(1); i++)
+                for (int i = 0; i < 2; i++)
                 {
                     //byte[] bruhbytes = BitConverter.GetBytes(clientpos[i, 0]);
                     //byte[] bruhbytes2 = BitConverter.GetBytes(clientpos[i, 1]);
-                    List<byte> bruhbytes = new List<byte> { (byte)(int)clientpos[0, i], (byte)(int)clientpos[1, i], (byte)(int)clientpos[2, i], (byte)animInfo[i].character_name.Length };
-                    bruhbytes.AddRange(Encoding.ASCII.GetBytes(animInfo[i].character_name));
+                    List<byte> bruhbytes = new List<byte> { (byte)players[i].x, (byte)players[i].y, (byte)(int)players[i].map, (byte)players[i].character_name.Length };
+                    bruhbytes.AddRange(Encoding.ASCII.GetBytes(players[i].character_name));
                     //bruhbytes.RemoveAt(bruhbytes.Count); //.remove null terminator at the end
-                    bruhbytes.Add((byte)animInfo[i].character_index);
-                    bruhbytes.Add((byte)animInfo[i].direction);
+                    bruhbytes.Add((byte)players[i].character_index);
+                    bruhbytes.Add((byte)players[i].direction);
                     bruhbytes.Add(0x00);
                     if (i == 0)
                     {
@@ -73,10 +79,6 @@ namespace nettest
 
                 }
             }
-        }
-        public static void Messages(NetworkStream stream)
-        {
-
         }
         public static void Listening(ref NetworkStream stream, ref TcpClient client,int clientNum)
         {
@@ -103,16 +105,16 @@ namespace nettest
                         case 0: //this should never happen
                             Console.WriteLine("something is very bad"); break;
                         case 1: //this is position processing information.
-                            clientpos[0, clientNum] = byteConvert(ref bytes); //x
-                            clientpos[1, clientNum] = byteConvert(ref bytes); //y;
+                            players[clientNum].x = byteConvert(ref bytes); //x
+                            players[clientNum].y = byteConvert(ref bytes); //y;
                             break;
                         case 2: //map change
-                            clientpos[2, clientNum] = byteConvert(ref bytes);
+                            players[clientNum].map = byteConvert(ref bytes);
                             break;
                         case 3: // anim change
-                            animInfo[clientNum].character_name = Encoding.UTF8.GetString(genericConvert(ref bytes, byteConvert(ref bytes)));
-                            animInfo[clientNum].character_index = byteConvert(ref bytes);
-                            animInfo[clientNum].direction = byteConvert(ref bytes);
+                            players[clientNum].character_name = Encoding.UTF8.GetString(genericConvert(ref bytes, byteConvert(ref bytes)));
+                            players[clientNum].character_index = byteConvert(ref bytes);
+                            players[clientNum].direction = byteConvert(ref bytes);
                             break;
                         default:
                             Console.WriteLine("unsupported packet type");
@@ -160,16 +162,23 @@ namespace nettest
             return -1;
         }
     }
-    class AnimInfo {
+    class CharInfo
+    {
         public string character_name;
         public int direction;
         public int character_index;
+        public int map;
+        public int x;
+        public int y;
 
-        public AnimInfo()
+        public CharInfo()
         {
             character_name = "";
             direction = 0;
             character_index = 0;
+            map = 0;
+            x = 0;
+            y = 0;
         }
     }
 }
