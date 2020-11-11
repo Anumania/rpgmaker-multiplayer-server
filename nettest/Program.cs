@@ -41,18 +41,19 @@ namespace nettest
 
             Thread thread = new Thread(() =>
             {
+                int i = 0;
                 while (true)
                 {
-                    int i = 0;
                     TcpClient client = server.AcceptTcpClient();
                     NetworkStream stream = client.GetStream();
                     ConsoleHelper.Log(ConsoleHelper.MessageType.info, "got a connection!");
+                    i++; //increment i after the thread starts so that i dont have to race
                     players[i] = new CharInfo();
                     players[i].client = client;
                     players[i].stream = stream;
                     Thread thread2 = new Thread(() => Listening(ref stream, ref client, i));
                     thread2.Start();
-                    i++;
+                    
                 }
             });
             thread.Start();
@@ -84,19 +85,29 @@ namespace nettest
                         try
                         {
                             if (players[i] != null)
-                                players[i].stream.Write(bruhbytes.ToArray());
-                        }
-                        catch (System.Net.Sockets.SocketException e)
-                        {
-                            if (e.SocketErrorCode == SocketError.ConnectionReset) //.if the player disconnects
                             {
+                                for(int j = 0; j < 255; j++)
+                                {
+                                    if(j!= i&& players[j] != null)
+                                    {
+                                        players[j].stream.Write(bruhbytes.ToArray());
+                                    }
+                                }
+                            }
+
+                                
+                        }
+                        catch (System.IO.IOException e)
+                        {
+                            //if (e == SocketError.ConnectionReset) //.if the player disconnects
+                            //{
                                 ConsoleHelper.Log(ConsoleHelper.MessageType.net, "player " + i.ToString() + " disconnected.");
                                 players[i] = null;
-                            }
-                            else
-                            {
-                                throw e; //if its not the error im looking for, i should be crashing.
-                            }
+                            //}
+                            //else
+                            //{
+                                //throw e; //if its not the error im looking for, i should be crashing.
+                            //}
                         }
                     }
                 }
@@ -106,7 +117,11 @@ namespace nettest
         {
             while (true)
             {
-                if (client.Available > 0) //remember that client packets are always complete when processed, not cut off in the middle.
+                if(players[clientNum] == null)
+                {
+                    break;
+                }
+                else if (client.Available > 0) //remember that client packets are always complete when processed, not cut off in the middle.
                 {
                     Byte[] bytes = new Byte[client.Available];
                     
