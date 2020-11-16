@@ -156,7 +156,17 @@ namespace nettest
                                 players[clientNum].direction = byteConvert(ref bytes);
                                 break;
                             default:
-                                ConsoleHelper.Log(ConsoleHelper.MessageType.error,"unsupported packet type");
+                                ConsoleHelper.Log(ConsoleHelper.MessageType.error, "unsupported packet type");
+                                string log = "";
+                                foreach (byte a in bytes)
+                                {
+                                    log += a.ToString();
+                                    log += " ";
+                                }
+                                ConsoleHelper.Log(ConsoleHelper.MessageType.net, log);
+                                String data = Encoding.UTF8.GetString(bytes);
+                                ConsoleHelper.Log(ConsoleHelper.MessageType.net, data);
+                                bytes = new byte[0];
                                 break;
                         }
                     }
